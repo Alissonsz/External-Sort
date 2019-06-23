@@ -6,16 +6,25 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <functional>
 
 #pragma pack(push, 1)
 struct Entry{
 	char key[20];
-	char value[50]; 
+	char value[50];
+
 };
 #pragma pack(pop)
 
+struct Reg{
+	std::string key;
+	std::string value;
+	bool marked;
 
+
+	bool operator < (const Reg& ro) const {
+		return (this->marked == true && ro.marked == false) || (this->marked == ro.marked && this->key > ro.key);
+	}
+};
 
 
 class Ordener{
@@ -28,14 +37,20 @@ private:
 	bool OpenInputFile();
 	bool ReadInputFile();
 	std::string ReadStringFromInput();
-	bool Compare(std::pair<std::string, bool> a, std::pair<std::string, bool> b) { 
-		return a.second == false && b.second == true || a.first < b.first;
-	}
+	int CreateEmptyFile();
+	void CheckHeapAndWriteAtFile();
+	void ResetMarkedElements();
 	
 
 	std::fstream m_inFile;
 	std::fstream m_outFile;
-	std::priority_queue <std::string, std::vector<std::string>> m_heap;
+	std::fstream m_currentRunFile;
+	std::priority_queue <Reg> m_heap;
+	std::vector<int> m_runsIds;
+	int m_numberOfRuns = 0;
+	int m_numberOfKeys = 0;
+	bool m_someKeyAdded = false;
+	std::string m_lastKeyAdded;
 
 
 	const int MAX_HEAP = 3;
