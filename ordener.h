@@ -7,19 +7,11 @@
 #include <utility>
 #include <vector>
 
-#pragma pack(push, 1)
-struct Entry{
-	char key[20];
-	char value[50];
-
-};
-#pragma pack(pop)
-
 struct Reg{
 	std::string key;
 	std::string value;
 	bool marked;
-
+	int index;
 
 	bool operator < (const Reg& ro) const {
 		return (this->marked == true && ro.marked == false) || (this->marked == ro.marked && this->key > ro.key);
@@ -37,9 +29,11 @@ private:
 	bool OpenInputFile();
 	bool ReadInputFile();
 	std::string ReadStringFromInput();
+	std::string ReadStringFromFile(std::fstream *fileToRead);
 	int CreateEmptyFile();
 	void CheckHeapAndWriteAtFile();
 	void ResetMarkedElements();
+	void MergeRuns();
 	
 
 	std::fstream m_inFile;
@@ -51,9 +45,11 @@ private:
 	int m_numberOfKeys = 0;
 	bool m_someKeyAdded = false;
 	std::string m_lastKeyAdded;
+	std::vector<std::fstream> m_opennedFiles;
 
 
 	const int MAX_HEAP = 3;
-	const int ENTRY_SIZE = sizeof(Entry);
+	const int REG_SIZE = sizeof(Reg);
+	const int MAXNARQS = 4;
 
 };
