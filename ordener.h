@@ -6,6 +6,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <Windows.h>
+#include <Psapi.h>
 
 struct Reg{
 	std::string key;
@@ -47,9 +49,11 @@ private:
 	std::string m_lastKeyAdded;
 	std::vector<std::fstream> m_opennedFiles;
 
+	//Tamanho em bytes de cada registro para contorlar a memoria maxima
+	const int REG_SIZE = (70 * sizeof(char) + sizeof(bool) + sizeof(int));
 
-	const int MAX_HEAP = 3;
-	const int REG_SIZE = sizeof(Reg);
-	const int MAXNARQS = 4;
+	//Constantes exigidas pelo professor
+	const int MAXMEN = 512000000;
+	const int MAXNARQS = 100;
 
 };

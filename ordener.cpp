@@ -3,14 +3,11 @@
 
 Ordener::Ordener(const char* fileName) : m_fileName (fileName) {
 	if(OpenInputFile()){
-
+		remove("saida.dat");
 		ReadInputFile();
-
-		//Just debug issues
-		while(!m_heap.empty()){
-			std::cout<<m_heap.top().key<<" "<<m_heap.top().value<<std::endl;
-			m_heap.pop();
-		}	
+		
+		   		   
+		
 		rename(std::string("run" + std::to_string(m_runsIds[0]) + ".dat").c_str(), "saida.dat");
 		
 
@@ -42,7 +39,10 @@ bool Ordener::ReadInputFile(){
 		m_heap.push(aux);
 		m_numberOfKeys++;
 		
-		if(m_heap.size() > MAX_HEAP){
+		PROCESS_MEMORY_COUNTERS memCounter;
+		BOOL result = GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter));
+
+		if(memCounter.WorkingSetSize + REG_SIZE > MAXMEN){
 			CheckHeapAndWriteAtFile();
 		}
 	}
@@ -62,19 +62,16 @@ void Ordener::MergeRuns(){
 	
 
 	while(m_runsIds.size() > 1){
-		std::cout<<"RUNS EXISTENTES:"<<std::endl;
-		for(int i=0; i<m_runsIds.size(); i++) std::cout<<m_runsIds[i]<<" ";
-		std::cout<<std::endl;	
 		
 		int numFile = CreateEmptyFile();
 		
-		//std::cout<<"Create new arq num: "<<numFile<<std::endl;
+		
 		m_currentRunFile.open(std::string("run" + std::to_string(numFile) + ".dat").c_str(), std::fstream::in | std::fstream::out);
 		
 
 		int k = 0;
 		for(int i = 0; i <  MAXNARQS-1 && i < m_runsIds.size(); i++, numMergedRuns++, k++){
-			//std::cout<<"Open new arq num: "<<m_runsIds[i]<<std::endl;
+			
 			m_opennedFiles.push_back(std::fstream());
 			m_opennedFiles[m_opennedFiles.size() - 1].open(std::string("run" + std::to_string(m_runsIds[i]) + ".dat").c_str());
 
@@ -82,7 +79,7 @@ void Ordener::MergeRuns(){
 			
 		}
 		
-		std::cout<<"Quantidade de arquivos abertos: "<<m_opennedFiles.size()<<std::endl;
+		
 
 		int numOpennedFiles = m_opennedFiles.size();
 		Reg reading[numOpennedFiles];
@@ -134,7 +131,7 @@ void Ordener::MergeRuns(){
 		for(int i=0; i<k; i++){
 			std::string fileToremovename = std::string("run" + std::to_string(m_runsIds[i]) + ".dat");
 			remove(fileToremovename.c_str());
-			std::cout<<fileToremovename<<std::endl;
+			//std::cout<<fileToremovename<<std::endl;
 		}
 
 		m_runsIds.erase(m_runsIds.begin(), m_runsIds.begin() + k);
