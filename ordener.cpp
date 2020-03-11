@@ -23,7 +23,8 @@ Ordener::~Ordener(){ }
 
 bool Ordener::ReadInputFile(){
 	Reg aux;
-	int i=0;
+	
+	//loop to read input file
 	while(true){
 		std::string readedKey = ReadStringFromInput();
 		std::string readedValue = ReadStringFromInput();
@@ -32,17 +33,20 @@ bool Ordener::ReadInputFile(){
 		aux.value = readedValue;
 		aux.marked = false;
 
+		//ReadStringFromInput() return a string "FINISHED" if there's no more entries
 		if(readedKey == "FINISHED") break;
 
+		//marked says if the new readed entry is lower than the last entrie added on heap
 		if(m_someKeyAdded && aux.key < m_lastKeyAdded) aux.marked = true;
 
 		m_heap.push(aux);
 		m_numberOfKeys++;
 		
-		PROCESS_MEMORY_COUNTERS memCounter;
-		BOOL result = GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter));
 
-		if(memCounter.WorkingSetSize + REG_SIZE > MAXMEN){
+
+
+		//if we can't add a new entry on heap, write the entrie there's on the top of the heap at the current run
+		if(m_heap.size() * REG_SIZE + REG_SIZE > MAXMEN){
 			CheckHeapAndWriteAtFile();
 		}
 	}
@@ -50,19 +54,57 @@ bool Ordener::ReadInputFile(){
 	while(!m_heap.empty()) CheckHeapAndWriteAtFile();
 	m_currentRunFile.close();
 
+	//intercalate runs
 	MergeRuns();
 
 
 }
 
+void Ordener::CheckHeapAndWriteAtFile(){
+	//if there's no open run or all the elements int the current run are markeds, create a new run and unmark all elements
+	if(m_currentRunFile.is_open() == false){
+		int fileToOpenId = CreateEmptyFile();
+		m_runsIds.push_back(fileToOpenId);
+		m_currentRunFile.open(std::string("run" + std::to_string(fileToOpenId) + ".dat").c_str(), std::fstream::in | std::fstream::out);
+	} else if(m_heap.top().marked == true) {
+		m_currentRunFile.close();
+		ResetMarkedElements();
+
+		int fileToOpenId = CreateEmptyFile();
+		m_runsIds.push_back(fileToOpenId);
+		m_currentRunFile.open(std::string("run" + std::to_string(fileToOpenId) + ".dat").c_str(), std::fstream::in | std::fstream::out);
+	}
+
+
+	//write the top element
+	Reg regToWrite = m_heap.top();
+	m_currentRunFile<<regToWrite.key<<","<<regToWrite.value+"\n";
+	m_lastKeyAdded = regToWrite.key;
+	m_someKeyAdded = true;
+
+	m_heap.pop();
+}
+
+void Ordener::ResetMarkedElements(){
+	std::vector<Reg> auxVector;
+
+	//to do --------- find a better way to do that
+	while(!m_heap.empty()){
+		Reg topReg = m_heap.top();
+		topReg.marked = false;
+		auxVector.push_back(topReg);
+		m_heap.pop();
+	}
+
+	for(int i = 0; i < auxVector.size(); i++) m_heap.push(auxVector[i]);
+}
+
 void Ordener::MergeRuns(){
 	int numMergedRuns = 0;
-	int runsToMerge = m_runsIds.size();
 
-	
-
+	//while we have at least 2 runs to intercalate
 	while(m_runsIds.size() > 1){
-		
+		//create a new file to save the merge's result
 		int numFile = CreateEmptyFile();
 		
 		
@@ -70,12 +112,11 @@ void Ordener::MergeRuns(){
 		
 
 		int k = 0;
+		//open MAXNARQS-1 runss (-1 because we must have one file to write the merge result)
 		for(int i = 0; i <  MAXNARQS-1 && i < m_runsIds.size(); i++, numMergedRuns++, k++){
 			
 			m_opennedFiles.push_back(std::fstream());
 			m_opennedFiles[m_opennedFiles.size() - 1].open(std::string("run" + std::to_string(m_runsIds[i]) + ".dat").c_str());
-
-
 			
 		}
 		
@@ -89,7 +130,7 @@ void Ordener::MergeRuns(){
 			reading[i].index = -1;
 		}
 
-		
+		//read one entry from each run (we assume that we can hold at least MAXNARQS-1 entries at memory)
 		for(int i=0; i<numOpennedFiles; i++){
 			Reg auxReg;
 
@@ -105,6 +146,7 @@ void Ordener::MergeRuns(){
 
 		}
 		
+		//write the top's entry and read a new entry from the run where the entry we write were
 		while(!m_heap.empty()){
 			Reg topReg = m_heap.top();
 			m_heap.pop();
@@ -126,23 +168,23 @@ void Ordener::MergeRuns(){
 
 			m_heap.push(auxReg);
 		}
+
 		m_runsIds.push_back(numFile);
-		m_opennedFiles.clear();
+		m_opennedFiles.clear();	
+		//delete processed runs
 		for(int i=0; i<k; i++){
 			std::string fileToremovename = std::string("run" + std::to_string(m_runsIds[i]) + ".dat");
 			remove(fileToremovename.c_str());
-			//std::cout<<fileToremovename<<std::endl;
+		
 		}
 
+		//att run ids vector
 		m_runsIds.erase(m_runsIds.begin(), m_runsIds.begin() + k);
 		
 
 		
 		m_currentRunFile.close();
-		
-		
-		
-	//break;		
+				
 
 	}
 }
@@ -192,40 +234,7 @@ std::string Ordener::ReadStringFromFile(std::fstream *fileToRead){
 	return readedString;
 }
 
-void Ordener::CheckHeapAndWriteAtFile(){
-	if(m_currentRunFile.is_open() == false){
-		int fileToOpenId = CreateEmptyFile();
-		m_runsIds.push_back(fileToOpenId);
-		m_currentRunFile.open(std::string("run" + std::to_string(fileToOpenId) + ".dat").c_str(), std::fstream::in | std::fstream::out);
-	} else if(m_heap.top().marked == true) {
-		m_currentRunFile.close();
-		ResetMarkedElements();
 
-		int fileToOpenId = CreateEmptyFile();
-		m_runsIds.push_back(fileToOpenId);
-		m_currentRunFile.open(std::string("run" + std::to_string(fileToOpenId) + ".dat").c_str(), std::fstream::in | std::fstream::out);
-	}
-	
-	Reg regToWrite = m_heap.top();
-	m_currentRunFile<<regToWrite.key<<","<<regToWrite.value+"\n";
-	m_lastKeyAdded = regToWrite.key;
-	m_someKeyAdded = true;
-
-	m_heap.pop();
-}
-
-void Ordener::ResetMarkedElements(){
-	std::vector<Reg> auxVector;
-
-	while(!m_heap.empty()){
-		Reg topReg = m_heap.top();
-		topReg.marked = false;
-		auxVector.push_back(topReg);
-		m_heap.pop();
-	}
-
-	for(int i = 0; i < auxVector.size(); i++) m_heap.push(auxVector[i]);
-}
 
 int Ordener::CreateEmptyFile(){
 	std::fstream newRunFile;

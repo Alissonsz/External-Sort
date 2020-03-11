@@ -6,8 +6,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include <Windows.h>
-#include <Psapi.h>
 
 struct Reg{
 	std::string key;
@@ -15,6 +13,7 @@ struct Reg{
 	bool marked;
 	int index;
 
+	//to sort the priority queue
 	bool operator < (const Reg& ro) const {
 		return (this->marked == true && ro.marked == false) || (this->marked == ro.marked && this->key > ro.key);
 	}
@@ -49,7 +48,7 @@ private:
 	std::string m_lastKeyAdded;
 	std::vector<std::fstream> m_opennedFiles;
 
-	//Tamanho em bytes de cada registro para contorlar a memoria maxima
+	//Tamanho em bytes de cada registro para contorlar a memoria maxima (desconsiderando que as estruturas do c++ usam mais memória)
 	const int REG_SIZE = (70 * sizeof(char) + sizeof(bool) + sizeof(int));
 
 	//Constantes exigidas pelo professor
